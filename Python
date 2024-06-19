@@ -1,0 +1,137 @@
+from datetime import datetime, timedelta
+
+class Book:
+    def __init__(self, title, author, ISBN, genre, quantity):
+        self.title = title
+        self.author = author
+        self.ISBN = ISBN
+        self.genre = genre
+        self.quantity = quantity
+
+    def update_info(self, title=None, author=None, quantity=None):
+        if title:
+            self.title = title
+        if author:
+            self.author = author
+        if quantity is not None:
+            self.quantity = quantity
+
+    def __str__(self):
+        return f"{self.title} by {self.author}, ISBN: {self.ISBN}, Genre: {self.genre}, Available copies: {self.quantity}"
+
+class Borrower:
+    def __init__(self, name, contact_details, membership_id):
+        self.name = name
+        self.contact_details = contact_details
+        self.membership_id = membership_id
+
+    def update_info(self, name=None, contact_details=None):
+        if name:
+            self.name = name
+        if contact_details:
+            self.contact_details = contact_details
+
+    def __str__(self):
+        return f"Borrower: {self.name}, Contact: {self.contact_details}, Membership ID: {self.membership_id}"
+
+
+class Library:
+    def __init__(self):
+        self.books = {}
+        self.borrowers = {}
+        self.borrowed_books = {}
+
+    # Book management
+    def add_book(self, book):
+        if book.ISBN in self.books:
+            self.books[book.ISBN].quantity += book.quantity
+        else:
+            self.books[book.ISBN] = book
+
+    def update_book(self, ISBN, title=None, author=None, quantity=None):
+        if ISBN in self.books:
+            self.books[ISBN].update_info(title, author, quantity)
+
+    def remove_book(self, ISBN):
+        if ISBN in self.books:
+            del self.books[ISBN]
+
+    # Borrower management
+    def add_borrower(self, borrower):
+        self.borrowers[borrower.membership_id] = borrower
+
+    def update_borrower(self, membership_id, name=None, contact_details=None):
+        if membership_id in self.borrowers:
+            self.borrowers[membership_id].update_info(name, contact_details)
+
+    def remove_borrower(self, membership_id):
+        if membership_id in self.borrowers:
+            del self.borrowers[membership_id]
+
+    # Book borrowing and returning
+    def borrow_book(self, ISBN, membership_id, days=14):
+        if ISBN in self.books and membership_id in self.borrowers:
+            if self.books[ISBN].quantity > 0:
+                due_date = datetime.now() + timedelta(days=days)
+                self.borrowed_books[(ISBN, membership_id)] = due_date
+                self.books[ISBN].quantity -= 1
+                return due_date
+            else:
+                return "Book not available"
+        else:
+            return "Invalid ISBN or membership ID"
+
+    def return_book(self, ISBN, membership_id):
+        if (ISBN, membership_id) in self.borrowed_books:
+            del self.borrowed_books[(ISBN, membership_id)]
+            self.books[ISBN].quantity += 1
+        else:
+            return "No record of this book being borrowed by this member"
+
+    # Book search and availability
+    def search_books(self, title=None, author=None, genre=None):
+        results = []
+        for book in self.books.values():
+            if ((title and title.lower() in book.title.lower()) or
+                (author and author.lower() in book.author.lower()) or
+                (genre and genre.lower() in book.genre.lower())):
+                results.append(book)
+        return results
+
+    def check_availability(self, ISBN):
+        if ISBN in self.books:
+            return self.books[ISBN].quantity
+        else:
+            return "Book not found"
+
+# Initialize the library
+library = Library()
+
+# Add books to the library
+book1 = Book("The Great Gatsby", "F. Scott Fitzgerald", "1234567890", "Fiction", 5)
+book2 = Book("To Kill a Mockingbird", "Harper Lee", "1234567891", "Fiction", 3)
+library.add_book(book1)
+library.add_book(book2)
+
+# Add borrowers to the library
+borrower1 = Borrower("Alice Smith", "alice@example.com", "B001")
+borrower2 = Borrower("Bob Johnson", "bob@example.com", "B002")
+library.add_borrower(borrower1)
+library.add_borrower(borrower2)
+
+# Borrow a book
+due_date = library.borrow_book("1234567890", "B001")
+print(f"Book borrowed, due date: {due_date}")
+
+# Return a book
+library.return_book("1234567890", "B001")
+
+# Search for books
+search_results = library.search_books(author="Harper Lee")
+for book in search_results:
+    print(book)
+
+# Check book availability
+availability = library.check_availability("1234567890")
+print(f"Copies available: {availability}")
+
